@@ -1,0 +1,17 @@
+name: backend
+description: A FlintDart application
+version: 1.0.0
+publish_to: none
+
+environment:
+  sdk: ^3.2.0
+
+dependencies:
+  flint_dart: ^1.0.0+32
+
+
+dependency_overrides:
+  mysql_dart:
+    git:
+      url: https://github.com/Hybiekay/mysql.dart
+      ref: main

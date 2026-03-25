@@ -1,0 +1,120 @@
+import 'package:flutter/material.dart';
+import 'package:frontend/core/constant/app_style.dart';
+import 'package:frontend/core/theme/theme.dart';
+import 'package:frontend/model/chat_message_model.dart';
+
+class ChatMessageBubbleWidget extends StatelessWidget {
+  const ChatMessageBubbleWidget({super.key, required this.message});
+
+  final ChatMessageModel message;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final palette = Theme.of(context).extension<AppThemeColors>()!;
+    final bubbleColor = message.isMe
+        ? colorScheme.primary
+        : colorScheme.surfaceContainerHighest.withValues(alpha: 0.38);
+    final textColor = message.isMe
+        ? colorScheme.onPrimary
+        : colorScheme.onSurface;
+
+    switch (message.type) {
+      case ChatMessageType.text:
+        return Container(
+          constraints: const BoxConstraints(maxWidth: 320),
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+          decoration: BoxDecoration(
+            color: bubbleColor,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Text(
+            message.text ?? '',
+            style: AppStyle.circularTextStyle(
+              size: 16,
+              weight: FontWeight.w500,
+              color: textColor,
+            ),
+          ),
+        );
+      case ChatMessageType.voice:
+        return Container(
+          constraints: const BoxConstraints(maxWidth: 360),
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+          decoration: BoxDecoration(
+            color: bubbleColor,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: message.isMe
+                      ? Colors.white.withValues(alpha: 0.92)
+                      : colorScheme.primary,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.play_arrow_rounded,
+                  size: 30,
+                  color: message.isMe ? colorScheme.primary : Colors.white,
+                ),
+              ),
+              const SizedBox(width: 14),
+              ...List.generate(
+                18,
+                (index) => Container(
+                  width: 4,
+                  height: 10 + (index % 5) * 4,
+                  margin: const EdgeInsets.only(right: 5),
+                  decoration: BoxDecoration(
+                    color: index > 11
+                        ? textColor.withValues(alpha: 0.35)
+                        : textColor,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+              ),
+              Text(
+                message.voiceDuration ?? '00:16',
+                style: AppStyle.circularTextStyle(
+                  size: 16,
+                  weight: FontWeight.w600,
+                  color: textColor,
+                ),
+              ),
+            ],
+          ),
+        );
+      case ChatMessageType.image:
+        return Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: palette.messageSheet.withValues(alpha: 0.95),
+            borderRadius: BorderRadius.circular(22),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var i = 0; i < message.imageUrls.take(2).length; i++)
+                Padding(
+                  padding: EdgeInsets.only(right: i == 0 ? 8 : 0),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(18),
+                    child: Image.network(
+                      message.imageUrls[i],
+                      width: 116,
+                      height: 116,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+    }
+  }
+}
