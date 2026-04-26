@@ -24,7 +24,7 @@ class AuthMiddleware extends Middleware {
       if (user == null) {
         return res.status(401).send("Unauthorized");
       }
-
+      print(token);
       return await next(ctx);
     };
   }

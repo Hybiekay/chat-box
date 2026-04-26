@@ -1,8 +1,11 @@
+import 'package:flint_client/flint_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/core/constant/app_images.dart';
 import 'package:frontend/core/theme/theme.dart';
 import 'package:frontend/provider/home_provider.dart';
+import 'package:frontend/provider/recent_chat_provider.dart';
+import 'package:frontend/repositry/chat_repositry.dart';
 import 'package:frontend/screens/home/call.dart';
 import 'package:frontend/screens/home/contact.dart';
 import 'package:frontend/screens/home/message.dart';
@@ -16,11 +19,45 @@ final List<Widget> listWidget = [
   const SettingsScreen(),
 ];
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  FlintWebSocketClient? _socket;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() => handShack(ref.read(chatRepositryProvider)));
+  }
+
+  @override
+  void dispose() {
+    _socket?.dispose();
+    super.dispose();
+  }
+
+  Future handShack(ChatRepositry chatRepository) async {
+    _socket = await chatRepository.handShackSocket();
+
+    _socket?.on("messageReceived", (data) {
+      debugPrint('chat notification: $data');
+      ref.invalidate(recentChatsProvider);
+    });
+
+    _socket?.on('chat:error', (dynamic data) {
+      debugPrint('chat notification error: $data');
+    });
+
+    await _socket?.connect();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final homeProviderv = ref.watch(homeIndexProvider);
     final palette = Theme.of(context).extension<AppThemeColors>()!;
     final colorScheme = Theme.of(context).colorScheme;

@@ -7,6 +7,7 @@ import 'package:frontend/core/theme/theme.dart';
 import 'package:frontend/model/message_item_model.dart';
 import 'package:frontend/model/status_item_model.dart';
 import 'package:frontend/model/story_item_model.dart';
+import 'package:frontend/provider/recent_chat_provider.dart';
 import 'package:frontend/provider/status_provider.dart';
 import 'package:frontend/screens/home/chat_detail.dart';
 import 'package:frontend/screens/home/status_preview.dart';
@@ -16,94 +17,13 @@ import 'package:frontend/widget/message_tile_widget.dart';
 import 'package:frontend/widget/profile_avatar_widget.dart';
 import 'package:frontend/widget/story_avatar_widget.dart';
 
-const _myStory = StoryItemModel(
+var _myStory = StoryItemModel(
   name: 'My status',
   initials: 'ME',
   backgroundColor: Color(0xFFD9E8E5),
   ringColor: Color(0xFF5CB6AA),
   isMine: true,
 );
-
-List<StoryItemModel> storys = [
-  StoryItemModel(
-    name: 'Mayowa',
-    initials: 'ME',
-    backgroundColor: Color(0xFFD9E8E5),
-    ringColor: Color(0xFF5CB6AA),
-    isMine: false,
-  ),
-  StoryItemModel(
-    name: 'Demola',
-    initials: 'ME',
-    backgroundColor: Color(0xFFD9E8E5),
-    ringColor: Color(0xFF5CB6AA),
-    isMine: false,
-  ),
-  StoryItemModel(
-    name: 'Love',
-    initials: 'ME',
-    backgroundColor: Color(0xFFD9E8E5),
-    ringColor: Color(0xFF5CB6AA),
-    isMine: false,
-  ),
-];
-const _messages = [
-  MessageItemModel(
-    name: 'Alex Linderson',
-    message: 'How are you today?',
-    time: '2 min ago',
-    initials: 'AL',
-    avatarColor: Color(0xFFD8E0E8),
-    statusColor: Color(0xFF1EDB76),
-    profilePicUrl:
-        'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=600&q=80',
-    unreadCount: 3,
-  ),
-  MessageItemModel(
-    name: 'Team Align',
-    message: "Don't miss to attend the meeting.",
-    time: '2 min ago',
-    initials: 'TA',
-    avatarColor: Color(0xFF63B2F5),
-    statusColor: Color(0xFF1EDB76),
-    unreadCount: 4,
-    isGroup: true,
-  ),
-  MessageItemModel(
-    name: 'John Ahraham',
-    message: 'Hey! Can you join the meeting?',
-    time: '2 min ago',
-    initials: 'JA',
-    avatarColor: Color(0xFFFFC94D),
-    statusColor: Color(0xFFBEC4C3),
-    profilePicUrl:
-        'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=600&q=80',
-  ),
-  MessageItemModel(
-    name: 'Sabila Sayma',
-    message: 'How are you today?',
-    time: '2 min ago',
-    initials: 'SS',
-    avatarColor: Color(0xFFF6B6C1),
-    statusColor: Color(0xFFBEC4C3),
-  ),
-  MessageItemModel(
-    name: 'John Borino',
-    message: 'Have a good day',
-    time: '2 min ago',
-    initials: 'JB',
-    avatarColor: Color(0xFFE0D9D3),
-    statusColor: Color(0xFF1EDB76),
-  ),
-  MessageItemModel(
-    name: 'Amanda Robin',
-    message: 'I sent the updated files already.',
-    time: '8 min ago',
-    initials: 'AR',
-    avatarColor: Color(0xFFEAD9EE),
-    statusColor: Color(0xFFBEC4C3),
-  ),
-];
 
 class MessageScreen extends ConsumerStatefulWidget {
   const MessageScreen({super.key});
@@ -136,37 +56,9 @@ class _MessageScreenState extends ConsumerState<MessageScreen> {
       context,
       MaterialPageRoute(builder: (_) => ChatDetailScreen(contact: message)),
     );
-  }
-
-  List<StoryItemModel> _buildStatusStories(List<StatusItemModel> statuses) {
-    final uniqueStatuses = <String, StatusItemModel>{};
-    for (final status in statuses) {
-      uniqueStatuses.putIfAbsent(status.userId, () => status);
+    if (mounted) {
+      ref.invalidate(recentChatsProvider);
     }
-
-    var index = 0;
-    return uniqueStatuses.values.map((status) {
-      final parts = status.userName
-          .trim()
-          .split(RegExp(r'\s+'))
-          .where((part) => part.isNotEmpty)
-          .toList();
-      final initials = parts
-          .take(2)
-          .map((part) => part[0].toUpperCase())
-          .join();
-      final color = _storyPalette[index % _storyPalette.length];
-      index++;
-
-      return StoryItemModel(
-        name: status.userName,
-        initials: initials.isEmpty ? 'U' : initials,
-        backgroundColor: color,
-        ringColor: color,
-        profilePicUrl: status.userProfilePicUrl,
-        userId: status.userId,
-      );
-    }).toList();
   }
 
   Future<void> _openStatusPreview(StoryItemModel story) async {
@@ -189,7 +81,7 @@ class _MessageScreenState extends ConsumerState<MessageScreen> {
           userName: story.name,
           userInitials: story.initials,
           userProfilePicUrl: story.profilePicUrl ?? '',
-          statuses: statuses,
+          statuses: story.statuses ?? [],
         ),
       ),
     );
@@ -197,7 +89,9 @@ class _MessageScreenState extends ConsumerState<MessageScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final statusesState = ref.watch(statusProvider);
+    final recentChatsState = ref.watch(recentChatsProvider);
 
     return DecoratedBox(
       decoration: BoxDecoration(color: context.palette.headerBackground),
@@ -224,10 +118,18 @@ class _MessageScreenState extends ConsumerState<MessageScreen> {
                       ),
                     ),
                   ),
-                  const ProfileAvatarWidget(
-                    initials: 'AM',
-                    backgroundColor: Color(0xFFC8C5F7),
-                    radius: 28,
+                  GestureDetector(
+                    onTap: () async {
+                      print("Hello iam started");
+                      await ref.watch(statusProvider.notifier).fetchStatuses();
+                      print("Am done");
+                    },
+                    child: const ProfileAvatarWidget(
+                      initials: 'AM',
+                      backgroundColor: Color(0xFFC8C5F7),
+                      radius: 28,
+                      profilePicUrl: '',
+                    ),
                   ),
                 ],
               ),
@@ -236,8 +138,7 @@ class _MessageScreenState extends ConsumerState<MessageScreen> {
               height: 168,
               child: statusesState.when(
                 data: (statuses) {
-                  // final stories = [_myStory, ..._buildStatusStories(statuses)];
-                  final stories = [_myStory, ...storys];
+                  final stories = <StoryItemModel>[_myStory, ...statuses];
                   return ListView.separated(
                     padding: const EdgeInsets.fromLTRB(24, 18, 24, 18),
                     scrollDirection: Axis.horizontal,
@@ -309,22 +210,87 @@ class _MessageScreenState extends ConsumerState<MessageScreen> {
                       ),
                     ),
                     Expanded(
-                      child: ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(24, 22, 24, 28),
-                        itemBuilder: (context, index) {
-                          final message = _messages[index];
-                          return MessageTileWidget(
-                            item: message,
-                            onTap: () => _openChat(message),
+                      child: recentChatsState.when(
+                        data: (messages) {
+                          if (messages.isEmpty) {
+                            return _buildEmptyChatState(
+                              colorScheme,
+                              context.palette,
+                            );
+                          }
+
+                          return ListView.separated(
+                            padding: const EdgeInsets.fromLTRB(24, 22, 24, 28),
+                            itemBuilder: (context, index) {
+                              final message = messages[index];
+                              return MessageTileWidget(
+                                item: message,
+                                onTap: () => _openChat(message),
+                              );
+                            },
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(height: 28),
+                            itemCount: messages.length,
                           );
                         },
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(height: 28),
-                        itemCount: _messages.length,
+                        loading: () =>
+                            const Center(child: CircularProgressIndicator()),
+                        error: (error, stackTrace) => Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            child: Text(
+                              error.toString(),
+                              textAlign: TextAlign.center,
+                              style: AppStyle.circularTextStyle(
+                                size: 15,
+                                weight: FontWeight.w500,
+                                color: context.palette.secondaryText,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyChatState(ColorScheme colorScheme, AppThemeColors palette) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.chat_bubble_outline_rounded,
+              size: 54,
+              color: palette.secondaryText,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No recent conversations yet',
+              textAlign: TextAlign.center,
+              style: AppStyle.circularTextStyle(
+                size: 20,
+                weight: FontWeight.w700,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Send a message from Contacts to see the latest chat here.',
+              textAlign: TextAlign.center,
+              style: AppStyle.circularTextStyle(
+                size: 15,
+                weight: FontWeight.w500,
+                color: palette.secondaryText,
               ),
             ),
           ],

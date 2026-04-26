@@ -25,6 +25,11 @@ class User extends Model<User> {
       };
 
   @override
+  // TODO: implement conceal
+  List<String> get conceal =>
+      ['provider', "provider_id", "phoneNumber", "password"];
+
+  @override
   Table get table => Table(
         name: 'users',
         columns: [

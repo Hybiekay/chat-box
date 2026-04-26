@@ -131,7 +131,7 @@ class _StatusPreviewScreenState extends ConsumerState<StatusPreviewScreen> {
                             ClipRRect(
                               borderRadius: BorderRadius.circular(28),
                               child: Image.network(
-                                status.url!,
+                                status.url ?? "",
                                 height: 260,
                                 width: double.infinity,
                                 fit: BoxFit.cover,
@@ -140,9 +140,7 @@ class _StatusPreviewScreenState extends ConsumerState<StatusPreviewScreen> {
                             const SizedBox(height: 24),
                           ],
                           Text(
-                            status.content.isEmpty
-                                ? 'No caption'
-                                : status.content,
+                            status.content ?? 'No caption',
                             textAlign: TextAlign.center,
                             style: AppStyle.circularTextStyle(
                               size: 24,

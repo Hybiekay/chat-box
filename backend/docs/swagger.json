@@ -185,7 +185,7 @@
         ]
       }
     },
-    "/chat/rooms/{roomId}/messages": {
+    "/chat/recent": {
       "get": {
         "summary": "",
         "tags": [
@@ -195,7 +195,26 @@
           "200": {
             "description": "OK"
           }
+        }
+      }
+    },
+    "/chat/rooms/{roomId}": {
+      "get": {
+        "summary": "",
+        "tags": [
+          "Default"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "101": {
+            "description": "Switching Protocols"
+          }
         },
+        "x-websocket": true,
+        "x-flint-transport": "websocket",
+        "x-flint-namespace": "/chat/rooms/{roomId}",
         "parameters": [
           {
             "name": "roomId",
@@ -468,6 +487,36 @@
           }
         ]
       }
+    }
+  },
+  "x-websockets": {
+    "/chat/rooms/{roomId}": {
+      "summary": "",
+      "tags": [
+        "Default"
+      ],
+      "responses": {
+        "200": {
+          "description": "OK"
+        },
+        "101": {
+          "description": "Switching Protocols"
+        }
+      },
+      "x-websocket": true,
+      "x-flint-transport": "websocket",
+      "x-flint-namespace": "/chat/rooms/{roomId}",
+      "parameters": [
+        {
+          "name": "roomId",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          },
+          "description": "Path parameter: roomId"
+        }
+      ]
     }
   },
   "components": {

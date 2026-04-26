@@ -6,12 +6,16 @@ class ProfileAvatarWidget extends StatelessWidget {
     required this.initials,
     required this.backgroundColor,
     required this.radius,
+    required this.profilePicUrl,
+
     this.isGroup = false,
   });
 
   final String initials;
   final Color backgroundColor;
   final double radius;
+  final dynamic profilePicUrl;
+
   final bool isGroup;
 
   @override

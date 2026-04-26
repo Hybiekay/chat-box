@@ -1,6 +1,9 @@
 import 'dart:io';
 import 'package:flint_client/flint_client.dart';
+import 'package:flutter/animation.dart';
+import 'package:flutter/material.dart';
 import 'package:frontend/model/status_item_model.dart';
+import 'package:frontend/model/story_item_model.dart';
 import 'package:frontend/repositry/auth_repositry.dart';
 
 class StatusRepositry {
@@ -25,25 +28,83 @@ class StatusRepositry {
     if (res.isError) {
       res.throwIfError();
     }
+    var item = res.data["data"];
+    return StoryItemModel(
+      name: item["name"],
+      profilePicUrl: item["profilePicUrl"],
+      initials: item["name"]
+          .toString()
+          .split(" ")
+          .map((e) => e[1].toUpperCase())
+          .join(),
+      backgroundColor: Colors.black,
+      ringColor: Colors.black,
 
-    return StatusItemModel.fromMap(Map<String, dynamic>.from(res.data['data']));
+      statuses: (item["statuses"])
+          .map((e) => StatusItemModel.fromMap(e))
+          .toList(),
+    );
   }
 
-  Future<List<StatusItemModel>> getAll() async {
+  Future<List<StoryItemModel>> getAll() async {
+    print("get here");
     final headers = await authRepository.authHeaders();
     final res = await client.get("/status", headers: headers);
     res.throwIfError();
-    return (res.data['data'] as List<dynamic>)
-        .map((item) => StatusItemModel.fromMap(Map<String, dynamic>.from(item)))
-        .toList();
+
+    print("This is the data ${res.data}");
+    var data;
+    try {
+      data = (res.data['data'] as List<dynamic>)
+          .map(
+            (item) => StoryItemModel(
+              name: item["name"],
+              profilePicUrl: item["profilePicUrl"],
+              initials: item["name"]
+                  .toString()
+                  .split(" ")
+                  .map((e) => e[1].toUpperCase())
+                  .join(),
+              backgroundColor: Colors.black,
+              ringColor: Colors.black,
+
+              statuses: List<Map<String, dynamic>>.from(
+                item['statuses'],
+              ).map((e) => StatusItemModel.fromMap(e)).toList(),
+            ),
+          )
+          .toList();
+    } catch (e) {
+      print(e);
+    }
+
+    print("this is the Model ${data}");
+
+    return data;
   }
 
-  Future<List<StatusItemModel>> getByUser(String userId) async {
+  Future<List<StoryItemModel>> getByUser(String userId) async {
     final headers = await authRepository.authHeaders();
     final res = await client.get("/status/user/$userId", headers: headers);
     res.throwIfError();
     return (res.data['data'] as List<dynamic>)
-        .map((item) => StatusItemModel.fromMap(Map<String, dynamic>.from(item)))
+        .map(
+          (item) => StoryItemModel(
+            name: item["name"],
+            profilePicUrl: item["profilePicUrl"],
+            initials: item["name"]
+                .toString()
+                .split(" ")
+                .map((e) => e[1].toUpperCase())
+                .join(),
+            backgroundColor: Colors.black,
+            ringColor: Colors.black,
+
+            statuses: (item["statuses"])
+                .map((e) => StatusItemModel.fromMap(e))
+                .toList(),
+          ),
+        )
         .toList();
   }
 }

@@ -1,6 +1,8 @@
 import 'package:backend/helper/auth_helper.dart';
+import 'package:backend/models/conversation.dart';
 import 'package:backend/models/status.dart';
 import 'package:backend/models/status_read.dart';
+import 'package:backend/models/user_model.dart';
 import 'package:flint_dart/flint_dart.dart';
 import 'package:flint_dart/storage.dart';
 
@@ -8,11 +10,79 @@ class StatusController {
   Future<Response?> index(Context ctx) async {
     final res = ctx.res;
     if (res == null) return null;
+    final user = await ctx.req.authUser;
+    if (user == null) {
+      return res.status(401).json({
+        'status': false,
+        'message': 'Unauthorized',
+      });
+    }
+    final summaries = [];
 
-    final statuses = await Status().withRelation('user').all();
+    final userCon = await Conversation().where("userId", user.id).get();
+    final friendCon = await Conversation().where("friendId", user.id).get();
+    final conversations = [...userCon, ...friendCon];
+    print(conversations);
+    // final conversations = await Conversation()
+    //     .where("userId", user.id)
+    //     .orWhere("friendId", user.id)
+    //     .all();
+    // print("Status :$conversations");
+
+    for (var conversation in conversations) {
+      print(conversation);
+      final peerId = conversation.userId == user.id
+          ? conversation.friendId
+          : conversation.userId;
+
+      print(peerId);
+      final peer =
+          await User().where("id", peerId).withRelation("statuses").first();
+      // peer?.load("statuses");
+      print(peer?.toMap());
+      // final lastMessageId = conversation.lastMessageId.trim();
+      // final latestMessage = lastMessageId.isEmpty
+      //     ? null
+      //     : await ChatMessage().find(lastMessageId);
+
+      // if (latestMessage == null) {
+      //   continue;
+      // }
+
+      // summaries.add(
+      //   _RecentChatSummary(
+      //     conversationId: conversation.id,
+      //     peer: {
+      //       'id': peer?.id.toString(),
+      //       'name': peer?.name,
+      //       'bio': peer?.bio,
+      //       'profilePicUrl': peer?.profilePicUrl,
+      //     },
+      //     lastMessage: {
+      //       'id': latestMessage.id?.toString(),
+      //       'conversationId': latestMessage.conversationId,
+      //       'senderId': latestMessage.senderId,
+      //       'recipientId': latestMessage.recipientId,
+      //       'content': latestMessage.content,
+      //       'messageType': latestMessage.messageType,
+      //       'sentAt': latestMessage.sentAt,
+      //     },
+      //     sentAt: _sentAtValue(latestMessage),
+      //   ),
+      // );
+
+      if (peer == null ||
+          peer.toMap()["statuses"] == null ||
+          (peer.toMap()["statuses"] as List).isEmpty) {
+        continue;
+      }
+
+      summaries.add(peer);
+    }
+
     return res.json({
       'status': true,
-      "data": statuses.map((status) => status.toMap()).toList(),
+      "data": summaries.map((status) => status.toMap()).toList(),
     });
   }
 
@@ -33,7 +103,9 @@ class StatusController {
       }
     }
 
-    final createForm = await ctx.req.form();
+    final createForm = await ctx.req.json();
+
+    print(createForm);
     final content = (createForm['content'] ?? '').toString().trim();
     final type = (createForm['type'] ?? 'text').toString().trim();
 

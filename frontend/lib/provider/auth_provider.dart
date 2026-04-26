@@ -7,7 +7,6 @@ class AuthProvider extends AsyncNotifier<UserModel?> {
   build() async {
     final repo = ref.read(authRepositryProvider);
     final token = await repo.getToken();
-    print("this is token $token");
 
     if (token == null || token.isEmpty) {
       return null;
@@ -61,6 +60,15 @@ class AuthProvider extends AsyncNotifier<UserModel?> {
       var data = await repo.me(token: token);
       return UserModel.fromMap(data["data"]);
     });
+  }
+
+  Future logout() async {
+    print("Hello");
+    final repo = ref.read(authRepositryProvider);
+    state = AsyncValue.loading();
+    print("object");
+    repo.logout();
+    state = AsyncData(null);
   }
 }
 

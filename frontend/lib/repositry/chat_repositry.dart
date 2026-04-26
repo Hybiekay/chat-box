@@ -22,7 +22,7 @@ class ChatRepositry {
         cleanedPeerId != null &&
         cleanedPeerId.isNotEmpty) {
       final ids = [cleanedCurrentUserId, cleanedPeerId]..sort();
-      return 'room_${ids.join('__')}';
+      return ids.join('__');
     }
 
     final slug = fallbackKey
@@ -40,7 +40,10 @@ class ChatRepositry {
     required String currentUserId,
   }) async {
     final headers = await authRepository.authHeaders();
-    final res = await client.get('/chat/rooms/$roomId/messages', headers: headers);
+    final res = await client.get(
+      '/chat/rooms/$roomId/messages',
+      headers: headers,
+    );
     res.throwIfError();
 
     final responseData = res.data;
@@ -49,16 +52,46 @@ class ChatRepositry {
         : const [];
 
     return rawMessages
-        .map((item) => ChatMessageModel.fromMap(
-              Map<String, dynamic>.from(item as Map),
-              currentUserId: currentUserId,
-            ))
+        .map(
+          (item) => ChatMessageModel.fromMap(
+            Map<String, dynamic>.from(item as Map),
+            currentUserId: currentUserId,
+          ),
+        )
+        .toList();
+  }
+
+  Future<List<Map<String, dynamic>>> getRecentChats() async {
+    final headers = await authRepository.authHeaders();
+
+    print("i get here");
+    final res = await client.get(
+      '/chat/recent',
+      headers: headers,
+      cacheConfig: CacheConfig(maxAge: Duration.zero),
+    );
+    res.throwIfError();
+
+    final responseData = res.data;
+
+    print(responseData);
+    final rawChats = responseData is Map
+        ? responseData['data'] as List<dynamic>? ?? const []
+        : const [];
+
+    return rawChats
+        .map((item) => Map<String, dynamic>.from(item as Map))
         .toList();
   }
 
   Future<FlintWebSocketClient> createSocket(String roomId) async {
     final headers = await authRepository.authHeaders();
     return client.ws('/chat/rooms/$roomId', headers: headers);
+  }
+
+  Future<FlintWebSocketClient> handShackSocket() async {
+    final headers = await authRepository.authHeaders();
+    return client.ws('/chat/connect', headers: headers);
   }
 }
 

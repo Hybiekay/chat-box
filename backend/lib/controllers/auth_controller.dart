@@ -8,7 +8,6 @@ class AuthController extends Controller {
     final res = ctx.res;
     final req = ctx.req;
     if (res == null) return null;
-    print(req.headers);
     var token = req.bearerToken;
 
     if (token == null) return res.json({"message": "Unauthorized"});
@@ -72,10 +71,6 @@ class AuthController extends Controller {
 
     try {
       var body = await req.json();
-
-      // Validator.validate(
-      //     body, {"email": "required|string", "password": "required|string"});
-      print(body);
       final token = await Auth.login(body['email'], body["password"]);
 
       return res.json({"status": "successfull", "data": token});

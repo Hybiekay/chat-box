@@ -7,11 +7,11 @@ import 'package:backend/models/user_model.dart';
 import 'package:backend/models/status.dart';
 import 'package:backend/models/status_read.dart';
 
+import 'package:backend/models/conversation.dart';
 void main(_, SendPort? sendPort) {
-  runTableRegistry([
-    User().table,
+  runTableRegistry([User().table,
     ChatMessage().table,
     Status().table,
     StatusRead().table,
-  ], _, sendPort);
+    Conversation().table,], _, sendPort);
 }

@@ -24,6 +24,7 @@ class UserAvatarWidget extends StatelessWidget {
       backgroundColor: backgroundColor,
       radius: radius,
       isGroup: isGroup,
+      profilePicUrl: '',
     );
 
     if (profilePicUrl == null || profilePicUrl!.isEmpty) {

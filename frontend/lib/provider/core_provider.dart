@@ -8,6 +8,7 @@ final flintCLient = Provider(
     onError: (error) {
       print(error.toMap());
     },
+    defaultCacheConfig: CacheConfig(forceRefresh: true, maxAge: Duration.zero),
   ),
 );
 

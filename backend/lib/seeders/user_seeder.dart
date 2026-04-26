@@ -1,8 +1,9 @@
 import 'package:backend/models/user_model.dart';
 import 'package:flint_dart/flint_dart.dart';
 
-class UserSeeder {
-  static Future<void> seedDemoUsers() async {
+class UserSeeder extends Seeder {
+  @override
+  Future<void> run() async {
     final password = Hashing().hash('password123');
 
     const users = [

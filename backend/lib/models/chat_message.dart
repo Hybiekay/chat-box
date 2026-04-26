@@ -1,3 +1,4 @@
+import 'package:backend/models/conversation.dart';
 import 'package:backend/models/user_model.dart';
 import 'package:flint_dart/model.dart';
 import 'package:flint_dart/schema.dart';
@@ -21,6 +22,12 @@ class ChatMessage extends Model<ChatMessage> {
           foreignKey: 'senderId',
           ownerKey: 'id',
         ),
+        "conversation": Relations.belongsTo<Conversation>(
+          "conversation",
+          () => Conversation(),
+          foreignKey: "conversationId",
+          ownerKey: "id",
+        )
       };
 
   @override
@@ -38,7 +45,6 @@ class ChatMessage extends Model<ChatMessage> {
           Column(
             name: 'content',
             type: ColumnType.text,
-            defaultValue: '',
           ),
           Column(
             name: 'messageType',

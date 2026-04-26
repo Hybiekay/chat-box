@@ -62,6 +62,11 @@ class AuthRepositry {
     }
     return res.data;
   }
+
+  Future logout() async {
+    storage.deleteAll();
+    return true;
+  }
 }
 
 final authRepositryProvider = Provider((ref) {

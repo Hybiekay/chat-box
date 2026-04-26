@@ -1,6 +1,8 @@
 import 'package:backend/helper/auth_helper.dart';
+import 'package:backend/models/conversation.dart';
 import 'package:backend/models/chat_message.dart';
-import 'package:flint_dart/flint_dart.dart';
+import 'package:backend/models/user_model.dart';
+import 'package:flint_dart/flint_dart.dart' hide ChatMessage;
 
 class ChatController {
   Future<Response?> history(Context ctx) async {
@@ -36,6 +38,95 @@ class ChatController {
     });
   }
 
+  Future<Response?> recent(Context ctx) async {
+    final res = ctx.res;
+    if (res == null) return null;
+
+    final user = await ctx.req.authUser;
+    if (user == null) {
+      return res.status(401).json({
+        'status': false,
+        'message': 'Unauthorized',
+      });
+    }
+
+    final summaries = <_RecentChatSummary>[];
+
+    final userCon = await Conversation().where("userId", user.id).get();
+    final friendCon = await Conversation().where("friendId", user.id).get();
+    final conversations = [...userCon, ...friendCon];
+    print(conversations);
+    for (var conversation in conversations) {
+      print(conversation);
+      final peerId = conversation.userId == user.id
+          ? conversation.friendId
+          : conversation.userId;
+
+      final peer = await User().find(peerId);
+      final lastMessageId = conversation.lastMessageId.trim();
+      final latestMessage = lastMessageId.isEmpty
+          ? null
+          : await ChatMessage().find(lastMessageId);
+
+      if (latestMessage == null) {
+        continue;
+      }
+
+      summaries.add(
+        _RecentChatSummary(
+          conversationId: conversation.id,
+          peer: {
+            'id': peer?.id.toString(),
+            'name': peer?.name,
+            'bio': peer?.bio,
+            'profilePicUrl': peer?.profilePicUrl,
+          },
+          lastMessage: {
+            'id': latestMessage.id?.toString(),
+            'conversationId': latestMessage.conversationId,
+            'senderId': latestMessage.senderId,
+            'recipientId': latestMessage.recipientId,
+            'content': latestMessage.content,
+            'messageType': latestMessage.messageType,
+            'sentAt': latestMessage.sentAt,
+          },
+          sentAt: _sentAtValue(latestMessage),
+        ),
+      );
+    }
+
+    summaries.sort((a, b) => b.sentAt.compareTo(a.sentAt));
+
+    return res.json({
+      'status': true,
+      'data': summaries.map((summary) => summary.toMap()).toList(),
+    });
+  }
+
+  Future handShack(Context ctx) async {
+    final socket = ctx.socket;
+    if (socket == null) return null;
+
+    final user = await ctx.req.authUser;
+    if (user == null) {
+      socket.emit('chat:error', {
+        'message': 'Unauthorized',
+      });
+      return null;
+    }
+
+    final userRoom = _userRoom(user.id);
+    socket.join(userRoom);
+    socket.emit('chat:notifications:ready', {
+      'userId': user.id,
+      'room': userRoom,
+    });
+
+    socket.onClose(() {
+      socket.leave(userRoom);
+    });
+  }
+
   Future<Object?> connect(Context ctx) async {
     final socket = ctx.socket;
     if (socket == null) return null;
@@ -67,6 +158,31 @@ class ChatController {
     socket.on('chat:send', (dynamic payload) async {
       final data = _asMap(payload);
       final content = (data['content'] ?? data['text'] ?? '').toString().trim();
+      Conversation? conversation;
+
+      final cleanedCurrentUserId = user.id.trim();
+      final cleanedPeerId = data['recipientId']?.toString().trim();
+      final normalizedConversationId = _conversationIdFor(
+        cleanedCurrentUserId,
+        cleanedPeerId,
+      );
+
+      if (cleanedCurrentUserId.isNotEmpty &&
+          cleanedPeerId != null &&
+          cleanedPeerId.isNotEmpty) {
+        conversation = await Conversation().upsert(uniqueBy: [
+          "id"
+        ], data: {
+          "id": normalizedConversationId,
+          "userId": cleanedCurrentUserId,
+          "friendId": cleanedPeerId,
+          "lastSenderId": cleanedCurrentUserId
+        }, excludeUpdatedData: [
+          'userId',
+          "friendId"
+        ]);
+      }
+
       if (content.isEmpty) {
         socket.emit('chat:error', {
           'message': 'Message cannot be empty',
@@ -74,14 +190,14 @@ class ChatController {
         return;
       }
 
-      final messageType = (data['messageType'] ?? data['type'] ?? 'text')
-          .toString()
-          .trim();
+      final messageType =
+          (data['messageType'] ?? data['type'] ?? 'text').toString().trim();
       final recipientId = data['recipientId']?.toString();
       final sentAt = DateTime.now().toIso8601String();
 
       final created = await ChatMessage().create({
-        'conversationId': conversationId,
+        'conversationId':
+            conversation?.id ?? normalizedConversationId ?? conversationId,
         'senderId': user.id.toString(),
         'recipientId': recipientId,
         'content': content,
@@ -96,20 +212,49 @@ class ChatController {
         return;
       }
 
-      final stored = await ChatMessage()
-          .withRelation('sender')
-          .find(created.id);
+      if (recipientId != null && recipientId.trim().isNotEmpty) {
+        conversation?.update(data: {"lastMessageId": created.id});
+      }
+
+      final stored =
+          await ChatMessage().withRelation('sender').find(created.id);
 
       if (stored == null) {
         return;
       }
 
+      var storedMap = stored.toMap();
+      storedMap.remove("created_at");
+      storedMap.remove("updated_at");
+
       socket.emitToRoom(
         conversationId,
         'chat:message',
-        stored.toMap(),
+        storedMap,
         includeSelf: true,
       );
+
+      final conversationKey =
+          (conversation?.id ?? normalizedConversationId ?? conversationId)
+              .trim();
+      final notificationPayload = {
+        'conversationId': conversationKey,
+        'message': storedMap,
+      };
+
+      WebSocketManager().emit(
+        _userRoom(cleanedCurrentUserId),
+        'messageReceived',
+        notificationPayload,
+      );
+
+      if (recipientId != null && recipientId.trim().isNotEmpty) {
+        WebSocketManager().emit(
+          _userRoom(recipientId.trim()),
+          'messageReceived',
+          notificationPayload,
+        );
+      }
     });
 
     socket.onClose(() {
@@ -129,5 +274,56 @@ class ChatController {
     }
 
     return <String, dynamic>{};
+  }
+
+  String _userRoom(String userId) => 'user:$userId';
+
+  String? _conversationIdFor(String userId, String? friendId) {
+    final cleanedUserId = userId.trim();
+    final cleanedFriendId = friendId?.trim();
+
+    if (cleanedUserId.isEmpty ||
+        cleanedFriendId == null ||
+        cleanedFriendId.isEmpty) {
+      return null;
+    }
+
+    final ids = [cleanedUserId, cleanedFriendId]..sort();
+    return ids.join('__');
+  }
+
+  DateTime _sentAtValue(ChatMessage message) {
+    final rawSentAt = message.sentAt?.trim();
+    if (rawSentAt != null && rawSentAt.isNotEmpty) {
+      final parsed = DateTime.tryParse(rawSentAt);
+      if (parsed != null) {
+        return parsed;
+      }
+    }
+
+    return DateTime.fromMillisecondsSinceEpoch(0);
+  }
+}
+
+class _RecentChatSummary {
+  _RecentChatSummary({
+    required this.conversationId,
+    required this.peer,
+    required this.lastMessage,
+    required this.sentAt,
+  });
+
+  final String conversationId;
+  final Map<String, dynamic> peer;
+  final Map<String, dynamic> lastMessage;
+  final DateTime sentAt;
+
+  Map<String, dynamic> toMap() {
+    return {
+      'conversationId': conversationId,
+      'peer': peer,
+      'lastMessage': lastMessage,
+      'sentAt': sentAt.toIso8601String(),
+    };
   }
 }

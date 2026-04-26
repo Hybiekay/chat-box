@@ -121,7 +121,10 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     }
   }
 
-  Future<void> _connectSocket(ChatRepositry chatRepository, String roomId) async {
+  Future<void> _connectSocket(
+    ChatRepositry chatRepository,
+    String roomId,
+  ) async {
     final socket = await chatRepository.createSocket(roomId);
     if (!mounted) {
       socket.dispose();
@@ -130,7 +133,11 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
 
     _socket = socket;
 
+    socket.on("connecting", (dynamic state) {
+      print("connecting");
+    });
     socket.on('state_change', (dynamic state) {
+      print(state);
       if (!mounted) return;
       if (state is WebSocketConnectionState) {
         setState(() {
@@ -140,6 +147,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     });
 
     socket.on('connect', (_) {
+      print("conectted");
       if (!mounted) return;
       setState(() {
         _socketState = WebSocketConnectionState.connected;
@@ -147,6 +155,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     });
 
     socket.on('disconnect', (_) {
+      print("disconnecting");
       if (!mounted) return;
       setState(() {
         if (_socketState != WebSocketConnectionState.reconnecting) {
@@ -191,7 +200,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     final decorated = <ChatMessageModel>[];
 
     for (final message in messages) {
-      decorated.add(_decorateMessage(message, decorated.isNotEmpty ? decorated.last : null));
+      decorated.add(
+        _decorateMessage(message, decorated.isNotEmpty ? decorated.last : null),
+      );
     }
 
     return decorated;
@@ -208,7 +219,8 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
     final senderKey = message.senderId ?? message.senderName ?? '';
     final previousKey = previous?.senderId ?? previous?.senderName ?? '';
 
-    final showSender = !message.isMe &&
+    final showSender =
+        !message.isMe &&
         (previous == null || previous.isMe || previousKey != senderKey);
 
     return message.copyWith(showSender: showSender);
@@ -243,9 +255,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
 
   void _showSnackBar(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _sendMessage() async {
@@ -378,10 +390,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
         Align(
           alignment: Alignment.center,
           child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: 10,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             decoration: BoxDecoration(
               color: colorScheme.surfaceContainerHighest.withValues(
                 alpha: 0.32,
@@ -400,10 +409,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
         ),
         const SizedBox(height: 28),
         for (final message in _messages) ...[
-          ChatThreadItemWidget(
-            contact: widget.contact,
-            message: message,
-          ),
+          ChatThreadItemWidget(contact: widget.contact, message: message),
           const SizedBox(height: 28),
         ],
       ],
@@ -424,10 +430,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
           const SizedBox(width: 14),
           Expanded(
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 18,
-                vertical: 8,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
               decoration: BoxDecoration(
                 color: colorScheme.surfaceContainerHighest.withValues(
                   alpha: 0.38,
@@ -477,11 +480,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
             ),
           ),
           const SizedBox(width: 18),
-          Icon(
-            Icons.mic_none_rounded,
-            size: 32,
-            color: colorScheme.onSurface,
-          ),
+          Icon(Icons.mic_none_rounded, size: 32, color: colorScheme.onSurface),
         ],
       ),
     );
@@ -624,8 +623,8 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                                     ),
                                   )
                                 : _messages.isEmpty
-                                    ? _buildEmptyState(colorScheme, palette)
-                                    : _buildMessageList(colorScheme, palette),
+                                ? _buildEmptyState(colorScheme, palette)
+                                : _buildMessageList(colorScheme, palette),
                           ),
                         ],
                       ),

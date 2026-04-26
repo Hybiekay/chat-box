@@ -10,7 +10,10 @@ class ChatRoutes extends RouteGroup {
   void register(Flint app) {
     final controller = ChatController();
 
-    app.get('/rooms/:roomId/messages', AuthMiddleware().handle(controller.history));
+    app.get('/recent', AuthMiddleware().handle(controller.recent));
+    app.get(
+        '/rooms/:roomId/messages', AuthMiddleware().handle(controller.history));
     app.websocket('/rooms/:roomId', controller.connect);
+    app.websocket('/connect', controller.handShack);
   }
 }

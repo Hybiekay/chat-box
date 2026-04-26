@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:frontend/model/status_item_model.dart';
 
 class StoryItemModel {
-  const StoryItemModel({
+  StoryItemModel({
     required this.name,
     required this.initials,
     required this.backgroundColor,
@@ -9,8 +12,9 @@ class StoryItemModel {
     this.profilePicUrl,
     this.userId,
     this.isMine = false,
+    this.statuses,
   });
-
+  List<StatusItemModel>? statuses;
   final String name;
   final String initials;
   final Color backgroundColor;

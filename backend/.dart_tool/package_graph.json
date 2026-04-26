@@ -22,7 +22,7 @@
     },
     {
       "name": "flint_dart",
-      "version": "1.0.0+32",
+      "version": "1.0.2",
       "dependencies": [
         "args",
         "bcrypt",
@@ -60,7 +60,7 @@
     },
     {
       "name": "worker_manager",
-      "version": "7.2.7",
+      "version": "7.2.9",
       "dependencies": [
         "async",
         "collection",
@@ -78,11 +78,10 @@
     },
     {
       "name": "uuid",
-      "version": "4.5.2",
+      "version": "4.5.3",
       "dependencies": [
         "crypto",
-        "fixnum",
-        "meta"
+        "fixnum"
       ]
     },
     {
@@ -126,7 +125,7 @@
     },
     {
       "name": "mailer",
-      "version": "6.6.0",
+      "version": "7.1.0",
       "dependencies": [
         "async",
         "crypto",
@@ -134,16 +133,25 @@
         "logging",
         "meta",
         "mime",
+        "path",
+        "punycoder",
+        "unorm_dart"
+      ]
+    },
+    {
+      "name": "flint_client",
+      "version": "0.0.2+1",
+      "dependencies": [
+        "clock",
         "path"
       ]
     },
     {
       "name": "dart_jsonwebtoken",
-      "version": "3.3.1",
+      "version": "3.4.0",
       "dependencies": [
         "clock",
         "convert",
-        "ed25519_edwards",
         "pointycastle"
       ]
     },
@@ -171,7 +179,7 @@
     },
     {
       "name": "meta",
-      "version": "1.17.0",
+      "version": "1.18.2",
       "dependencies": []
     },
     {
@@ -181,7 +189,7 @@
     },
     {
       "name": "async",
-      "version": "2.13.0",
+      "version": "2.13.1",
       "dependencies": [
         "collection",
         "meta"
@@ -220,6 +228,16 @@
       ]
     },
     {
+      "name": "unorm_dart",
+      "version": "0.3.2",
+      "dependencies": []
+    },
+    {
+      "name": "punycoder",
+      "version": "0.2.2",
+      "dependencies": []
+    },
+    {
       "name": "intl",
       "version": "0.20.2",
       "dependencies": [
@@ -239,16 +257,6 @@
       "dependencies": []
     },
     {
-      "name": "ed25519_edwards",
-      "version": "0.3.1",
-      "dependencies": [
-        "adaptive_number",
-        "collection",
-        "convert",
-        "crypto"
-      ]
-    },
-    {
       "name": "convert",
       "version": "3.1.2",
       "dependencies": [
@@ -261,21 +269,6 @@
       "dependencies": [
         "collection",
         "convert"
-      ]
-    },
-    {
-      "name": "adaptive_number",
-      "version": "1.0.0",
-      "dependencies": [
-        "fixnum"
-      ]
-    },
-    {
-      "name": "flint_client",
-      "version": "0.0.2+1",
-      "dependencies": [
-        "clock",
-        "path"
       ]
     }
   ],
